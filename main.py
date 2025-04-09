@@ -734,7 +734,7 @@ class PDFSigningTab(QWidget):
             
         except Exception as e:
             self.log(f"Error signing PDF: {str(e)}")
-
+            
 
 class PDFVerificationTab(QWidget):
     def __init__(self):
