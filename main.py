@@ -11,6 +11,7 @@ import os
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives.serialization import PrivateFormat, load_pem_private_key, pkcs12
 from cryptography import x509
 from cryptography.x509.oid import NameOID, ExtendedKeyUsageOID
 import datetime
@@ -180,7 +181,6 @@ class CertificateGenerationTab(QWidget):
 
     
     def generate_chain(self):
-            
         # Rest of existing generate_chain logic
 
         try:
@@ -474,11 +474,19 @@ class CertificateGenerationTab(QWidget):
             ).sign(private_key, hashes.SHA256(), default_backend())
 
             encryption = (
+                serialization.PrivateFormat.PKCS12.encryption_builder().
+                kdf_rounds(50000).
+                key_cert_algorithm(pkcs12.PBES.PBESv2SHA256AndAES256CBC).
+                build(self.passphrase_input.text().encode()) if self.passphrase_check.isChecked() else 
+                serialization.NoEncryption()
+            )
+
+            """encryption = (
                 serialization.BestAvailableEncryption(
                     self.passphrase_input.text().encode()
                 ) if self.passphrase_check.isChecked() else 
                 serialization.NoEncryption()
-            )
+            )"""
             
             # Save private key
             private_key_path = os.path.join(output_dir, "private_key.pem")

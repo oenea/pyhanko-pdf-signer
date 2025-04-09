@@ -1,0 +1,4 @@
+cryptography
+pyqt5
+pyhanko
+click
