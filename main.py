@@ -123,8 +123,6 @@ class CertificateGenerationTab(QWidget):
         self.copy_passphrase_btn.setEnabled(False)  # Initially disabled
         self.copy_passphrase_btn.clicked.connect(self.copy_passphrase_to_clipboard)
 
-
-
         chain_form.addRow(self.passphrase_check)
         chain_form.addRow("Passphrase:", self.passphrase_input)
         chain_form.addRow(self.generate_passphrase_btn)
@@ -249,7 +247,7 @@ class CertificateGenerationTab(QWidget):
             self.log("2. Generating Intermediate CA...")
             intermediate_key = rsa.generate_private_key(
                 public_exponent=65537,
-                key_size=3072,
+                key_size=4096,
                 backend=default_backend()
             )
             
@@ -298,7 +296,7 @@ class CertificateGenerationTab(QWidget):
             self.log("3. Generating Signer certificate...")
             signer_key = rsa.generate_private_key(
                 public_exponent=65537,
-                key_size=2048,
+                key_size=4096,
                 backend=default_backend()
             )
             
@@ -433,11 +431,11 @@ class CertificateGenerationTab(QWidget):
             
             # Create a self-signed certificate
             subject = issuer = x509.Name([
-                x509.NameAttribute(NameOID.COMMON_NAME, "PyHanko Self-Signed"),
-                x509.NameAttribute(NameOID.ORGANIZATION_NAME, "PyHanko User"),
+                x509.NameAttribute(NameOID.COMMON_NAME, "PG Self-Signed"),
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, "PG"),
             ])
             
-            cert = x509.CertificateBuilder().subject_name(
+            """cert = x509.CertificateBuilder().subject_name(
                 subject
             ).issuer_name(
                 issuer
@@ -453,6 +451,34 @@ class CertificateGenerationTab(QWidget):
             ).add_extension(
                 x509.BasicConstraints(ca=True, path_length=None), critical=True
             ).sign(private_key, hashes.SHA256(), default_backend())
+            """
+            # In the certificate generation code (e.g., generate_keys() method):
+            cert = x509.CertificateBuilder().subject_name(
+                subject
+            ).issuer_name(
+                issuer
+            ).public_key(
+                public_key
+            ).add_extension(
+                x509.KeyUsage(
+                    digital_signature=True,
+                    content_commitment=False,
+                    key_encipherment=False,
+                    data_encipherment=False,
+                    key_agreement=False,
+                    key_cert_sign=True, 
+                    crl_sign=False,
+                    encipher_only=False,
+                    decipher_only=False,
+                ), critical=True
+            ).sign(private_key, hashes.SHA256(), default_backend())
+
+            encryption = (
+                serialization.BestAvailableEncryption(
+                    self.passphrase_input.text().encode()
+                ) if self.passphrase_check.isChecked() else 
+                serialization.NoEncryption()
+            )
             
             # Save private key
             private_key_path = os.path.join(output_dir, "private_key.pem")
@@ -460,7 +486,7 @@ class CertificateGenerationTab(QWidget):
                 f.write(private_key.private_bytes(
                     encoding=serialization.Encoding.PEM,
                     format=serialization.PrivateFormat.PKCS8,
-                    encryption_algorithm=serialization.NoEncryption()
+                    encryption_algorithm=encryption#serialization.NoEncryption()
                 ))
             
             # Save public key
@@ -547,23 +573,20 @@ class PDFSigningTab(QWidget):
         
         self.field_name = QLineEdit("Signature1")
         self.create_field = QCheckBox("Create signature field if it does not exist")
-        self.location = QLineEdit()
-        self.contact_info = QLineEdit()
+        #self.location = QLineEdit()
+        #self.contact_info = QLineEdit()
         
         sig_form.addRow("Field Name:", self.field_name)
         sig_form.addRow(self.create_field)
-        sig_form.addRow("Location:", self.location)
-        sig_form.addRow("Contact Info:", self.contact_info)
+        #sig_form.addRow("Location:", self.location)
+        #sig_form.addRow("Contact Info:", self.contact_info)
         sig_group.setLayout(sig_form)
 
-        self.visible_signature_checkbox = QCheckBox("Create visible signature")
         self.signature_image_path = FileSelectionWidget("Signature Image:", "Image Files (*.jpg *.png *.bmp)")
-        sig_form.addRow(self.visible_signature_checkbox)
         sig_form.addRow(self.signature_image_path)
 
         self.timestamp_checkbox = QCheckBox("Add timestamp")
         sig_form.addRow(self.timestamp_checkbox)
-
         
         # Sign button and console
         self.sign_button = QPushButton("Sign PDF")
@@ -646,8 +669,8 @@ class PDFSigningTab(QWidget):
             # Get signature options
             field_name = self.field_name.text()
             create_field = self.create_field.isChecked()
-            location = self.location.text()
-            contact_info = self.contact_info.text()
+            #location = self.location.text()
+            #contact_info = self.contact_info.text()
             
             self.log(f"Signing PDF: {pdf_file}")
             self.log(f"Output file: {output_file}")
@@ -660,11 +683,11 @@ class PDFSigningTab(QWidget):
             key_passphrase = self.passphrase_input.text().encode() if self.passphrase_input.text() else None
             self.log("Loading certificates and keys...")
             
-             cms_signer = signers.SimpleSigner.load(
-                 key_file, cert_file,
-                 ca_chain_files=ca_chain,
-                 key_passphrase=key_passphrase
-             )
+            cms_signer = signers.SimpleSigner.load(
+                key_file, cert_file,
+                ca_chain_files=ca_chain,
+                key_passphrase=key_passphrase
+            )
 
             if key_passphrase:
                 self.log("Using encrypted private key with passphrase.")
@@ -692,10 +715,10 @@ class PDFSigningTab(QWidget):
                 )
                 
                 # Add optional metadata if provided
-                if location:
-                    signature_meta.location = location
-                if contact_info:
-                    signature_meta.contact_info = contact_info
+                #if location:
+                #    signature_meta.location = location
+                #if contact_info:
+                #    signature_meta.contact_info = contact_info
                 
                 # Sign the PDF
                 self.log("Signing PDF...")
@@ -758,6 +781,15 @@ class PDFVerificationTab(QWidget):
         cert_form.addRow(self.trust_cert)
         cert_form.addRow(intermediate_layout)
         cert_group.setLayout(cert_form)
+
+        # Legacy Certificate selection group
+        #cert_legacy_group = QGroupBox("Legacy Certificate Selection")
+        #cert_legacy_form = QFormLayout()
+        
+        #self.trust_legacy_cert = FileSelectionWidget("Legacy Certificate:", "Legacy Certificate Files (*.pem *.crt *.cer)")
+
+        #cert_legacy_form.addRow(self.trust_legacy_cert)
+        #cert_legacy_group.setLayout(cert_legacy_form)
         
         # Verification options group
         verify_group = QGroupBox("Verification Options")
@@ -784,6 +816,7 @@ class PDFVerificationTab(QWidget):
         
         layout.addWidget(file_group)
         layout.addWidget(cert_group)
+        #layout.addWidget(cert_legacy_group)
         layout.addWidget(verify_group)
         layout.addWidget(self.verify_button)
         layout.addWidget(console_group)
@@ -866,7 +899,9 @@ class PDFVerificationTab(QWidget):
             
             # Allow both digital_signature and nonRepudiation key usages
             key_usage_settings = KeyUsageConstraints(
-                key_usage={'digital_signature', 'nonRepudiation'}
+                key_usage={'digital_signature', 'nonRepudiation'},
+                #key_usage={'nonRepudiation'}
+                match_all_key_usages=False
             )
             
             # Open the PDF and validate the signature(s)
