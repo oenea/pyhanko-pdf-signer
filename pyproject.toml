@@ -1,11 +1,14 @@
 [project]
 name = "pyhanko-pdf-signer"
 version = "0.1.0"
-description = "Add your description here"
+description = "pdf signer utility using pyhanko library signing and stamping"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "cryptography>=44.0.2",
-    "PyQt5==5.15.11",
-    "PyQt5-sip==12.17.0"
+    "click>=8.2.1",
+    "pyqt5>=5.15.11",
+    "pyqt5-qt5>5.15.2; platform_system != 'Windows'",
+    "pyqt5-qt5<=5.15.2 ; platform_system == 'Windows'",
+    "cryptography>=45.0.3",
+    "pyhanko>=0.29.0",
 ]
