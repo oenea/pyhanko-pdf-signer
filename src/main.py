@@ -27,7 +27,8 @@ from pyhanko_certvalidator import ValidationContext
 from pyhanko.pdf_utils.reader import PdfFileReader
 from pyhanko.keys import load_cert_from_pemder
 
-selected_directory = "."
+selected_directory = ""
+
 
 class FileSelectionWidget(QWidget):
     """File Selection Widget class."""
@@ -182,6 +183,9 @@ class CertificateGenerationTab(QWidget):
         last_directory = ""
         with open("last-key-path.txt", "r") as file:
             last_directory = file.readline().strip()
+        
+        selected_directory = last_directory
+        print("changed last_directory")
                 
         self.output_dir = DirectorySelectionWidget("Output Directory:", last_directory)
         
@@ -1120,7 +1124,7 @@ class MainWindow(QMainWindow):
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.checkDirectory)
-        self.timer.start(5000)
+        self.timer.start(1000)
     
     def checkDirectory(self):
         """Check directory if exists."""
@@ -1129,9 +1133,9 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Selected directory does not exists.", 
                 "Please plug apropriate storage device or change private key directory.")
 
-
-
 if __name__ == '__main__':
+    with open("last-key-path.txt", "r") as file:
+        selected_directory = file.readline().strip()
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
