@@ -122,12 +122,12 @@ class DirectorySelectionWidget(QWidget):
             self.path_edit.setText(directory)
 
             selected_directory = directory
-            print(selected_directory)
             with open("last-key-path.txt", "w") as file:
                 file.write(f"{directory}\n")
     
     def get_path(self):
         """Get path."""
+
         return self.path_edit.text()
 
 
@@ -180,14 +180,10 @@ class CertificateGenerationTab(QWidget):
         self.toggle_passphrase_visibility_btn.setCheckable(True)
         self.toggle_passphrase_visibility_btn.clicked.connect(self.toggle_passphrase_visibility)
 
-        last_directory = ""
         with open("last-key-path.txt", "r") as file:
-            last_directory = file.readline().strip()
-        
-        selected_directory = last_directory
-        print("changed last_directory")
+            selected_directory = file.readline().strip()
                 
-        self.output_dir = DirectorySelectionWidget("Output Directory:", last_directory)
+        self.output_dir = DirectorySelectionWidget("Output Directory:", selected_directory)
         
         self.org_name = QLineEdit("Contoso Corporation")
         self.org_name.setPlaceholderText("Your organization name")
@@ -200,7 +196,6 @@ class CertificateGenerationTab(QWidget):
 
         self.country_name = QLineEdit("US")
         self.country_name.setPlaceholderText("Country name")
-
 
         self.generate_passphrase_btn = QPushButton("Auto-generate passphrase")
         self.generate_passphrase_btn.clicked.connect(self.generate_random_passphrase)
@@ -1000,7 +995,7 @@ class PDFVerificationTab(QWidget):
                             key_usage_settings=key_usage_settings
                         )
 
-                        self.log(f"Verifying signature {idx}:") 
+                        self.log(f"Verifying signature {idx}:")
 
                         aia_value_obj = sig.signer_cert.authority_information_access_value
                         if aia_value_obj:
@@ -1124,7 +1119,7 @@ class MainWindow(QMainWindow):
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.checkDirectory)
-        self.timer.start(1000)
+        self.timer.start(1)
     
     def checkDirectory(self):
         """Check directory if exists."""
